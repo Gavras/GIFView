@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_activity_main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.whygraphics.gifview.gif.GIFView xmlns:gif_view="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/main_activity_gif_vie"
+        android:layout_width="@dimen/gif_view_width"
+        android:layout_height="@dimen/gif_view_height"
+        android:layout_centerInParent="true"
+        android:scaleType="center"
+        gif_view:delay_in_millis="@integer/gif_view_delay_in_millis"
+        gif_view:gif_src="@string/gif1_asset_path" />
+</RelativeLayout>

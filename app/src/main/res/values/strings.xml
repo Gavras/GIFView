@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GIFView</string>
+    <string name="gif1_asset_path">asset:gif1</string>
+    <string name="gif1_url_path">url:http://pop.h-cdn.co/assets/16/33/480x264/gallery-1471381857-gif-season-2.gif</string>
+</resources>

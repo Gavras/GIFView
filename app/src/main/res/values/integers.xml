@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="gif_view_delay_in_millis">33</integer>
+</resources>
