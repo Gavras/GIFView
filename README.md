@@ -1,7 +1,7 @@
-## GIFView
+# GIFView
 This is a library for showing GIFs in an application
 
-# XML Attributes:
+## XML Attributes:
  
  gif_src:
  A string that represents the gif's source.
@@ -26,7 +26,7 @@ This is a library for showing GIFs in an application
  A positive integer that represents how many milliseconds
  should pass between every calculation of the next frame to be set.
 
-# Code Example
+## Code Example
 
 From XML:
 
