@@ -28,19 +28,9 @@ This is a library for showing GIFs in an application
 ## Code Example
 
 From XML:
-
-'''
-<com.whygraphics.gifview.gif.GIFView xmlns:gif_view="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/main_activity_gif_vie"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:scaleType="center"
-        gif_view:gif_src="url:http://pop.h-cdn.co/assets/16/33/480x264/gallery-1471381857-gif-season-2.gif" />
-'''
-In the code:
-'''
+'''java
 GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
-        
+
         mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
             @Override
             public void onSuccess(GIFView view) {
