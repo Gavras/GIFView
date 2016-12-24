@@ -28,7 +28,7 @@ This is a library for showing GIFs in an application
 ## Code Example
 
 From XML:
-```
+```xml
 <com.whygraphics.gifview.gif.GIFView xmlns:gif_view="http://schemas.android.com/apk/res-auto"
         android:id="@+id/main_activity_gif_vie"
         android:layout_width="200dp"
@@ -55,6 +55,6 @@ mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
 ```
 
 Setting the gif programmatically:
-```
+```java
 mGifView.setGifResource("asset:gif1");
 ```
