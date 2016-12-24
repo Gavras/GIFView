@@ -557,7 +557,13 @@ public class GIFView extends ImageView {
             if (e instanceof FileNotFoundException)
                 message = "file not found: " + message;
 
-            return new CannotInitGifException(message);
+            Exception returnedException = new CannotInitGifException(message);
+
+            // adds the suppressed exceptions, if exist
+            for (Throwable throwable : e.getSuppressed())
+                returnedException.addSuppressed(throwable);
+
+            return returnedException;
         }
 
         /**
