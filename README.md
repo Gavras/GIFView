@@ -38,7 +38,7 @@ From XML:
 ```
 
 In the activity:
-```
+```java
 GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
         
 mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
