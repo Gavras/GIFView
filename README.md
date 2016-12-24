@@ -3,6 +3,15 @@ This is a library for showing GIFs in an application
 
 ## XML Attributes:
  
+ starting_on_init:
+ A boolean that represents if the view starts the gif
+ when its initialization finishes or not.
+ 
+ 
+ delay_in_millis:
+ A positive integer that represents how many milliseconds
+ should pass between every calculation of the next frame to be set.
+ 
  gif_src:
  A string that represents the gif's source.
  
@@ -15,16 +24,6 @@ This is a library for showing GIFs in an application
  
  for example if you have a gif in the path "assets/ex_dir/ex_gif.gif"
  the string should be: "asset:ex_dir/ex_gif"
- 
- 
- starting_on_init:
- A boolean that represents if the view starts the gif
- when its initialization finishes or not.
- 
- 
- delay_in_millis:
- A positive integer that represents how many milliseconds
- should pass between every calculation of the next frame to be set.
 
 ## Code Example
 
