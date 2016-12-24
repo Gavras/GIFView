@@ -1,9 +1,10 @@
-apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
     buildToolsVersion "24.0.2"
     defaultConfig {
+        applicationId "com.whygraphics.gifview"
         minSdkVersion 19
         targetSdkVersion 25
         versionCode 1
