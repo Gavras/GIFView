@@ -53,3 +53,8 @@ mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
             }
 });
 ```
+
+Setting the gif programmatically:
+```
+mGifView.setGifResource("asset:gif1");
+```
