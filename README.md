@@ -41,7 +41,7 @@ In the activity:
 ```
 GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
         
-        mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
+mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
             @Override
             public void onSuccess(GIFView view) {
                 Toast.makeText(MainActivity.this, "onSuccess()", Toast.LENGTH_SHORT).show();
@@ -51,5 +51,5 @@ GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
             public void onFailure(GIFView view, Exception e) {
 
             }
-        });
+});
 ```
