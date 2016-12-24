@@ -26,11 +26,7 @@ This is a library for showing GIFs in an application
  the string should be: "asset:ex_dir/ex_gif"
 
 ## Code Example
-
-From XML:
-'''java
-GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
-
+'''GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
         mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
             @Override
             public void onSuccess(GIFView view) {
@@ -41,5 +37,5 @@ GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
             public void onFailure(GIFView view, Exception e) {
 
             }
-        });
-'''
+        });'''
+        
