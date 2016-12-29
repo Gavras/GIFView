@@ -1,5 +1,5 @@
 # GIFView
-This is a library for showing GIFs in applications.
+GIFView is a library for showing GIFs in applications.
 
 ## XML Attributes:
  
