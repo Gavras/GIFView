@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Movie;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.util.Log;
 
 import java.io.InputStream;
 import java.util.concurrent.Executors;
@@ -60,6 +61,9 @@ public class MovieGIF
 
     private Runnable mListenerRunnable;
 
+    // the first bitmap of this gif
+    private Bitmap thumbnail;
+
     /**
      * Creates Gif instance based on the passed InputStream.
      *
@@ -102,6 +106,45 @@ public class MovieGIF
         };
 
         setDelayInMillis(DEF_VAL_DELAY_IN_MILLIS);
+
+        createThumbnail();
+    }
+
+    // creates the thumbnail bitmap
+    private void createThumbnail() {
+        mMovie.setTime(0);
+        mMovie.draw(mCanvas, 0, 0);
+
+        Bitmap.Config config = mBitmap.getConfig();
+        if (config == null)
+            config = DEF_VAL_CONFIG;
+
+        thumbnail = mBitmap.copy(config, false);
+
+        if (thumbnail == null)
+            Log.e("GIFView", "GIFView: could not copy a bitmap and create the thumbnail");
+    }
+
+    /**
+     * Returns the delay in milliseconds between every calculation of the next frame to be set.
+     *
+     * @return the delay in milliseconds between every calculation of the next frame to be set
+     */
+    public int getDelayInMillis() {
+        return mDelayInMillis;
+    }
+
+    /**
+     * Sets the delay in millis between every calculation of the next frame to be set.
+     *
+     * @param delayInMillis the delay in millis
+     * @throws IllegalArgumentException if mDelayInMillis is non-positive
+     */
+    public void setDelayInMillis(int delayInMillis) {
+        if (delayInMillis <= 0)
+            throw new IllegalArgumentException("mDelayInMillis must be positive: " + delayInMillis);
+
+        this.mDelayInMillis = delayInMillis;
     }
 
     /**
@@ -138,16 +181,14 @@ public class MovieGIF
     }
 
     /**
-     * Sets the delay in millis between every calculation of the next frame to be set.
+     * Returns the thumbnail bitmap.
+     * <p>
+     * If initializing the thumbnail has failed Returns null.
      *
-     * @param delayInMillis the delay in millis
-     * @throws IllegalArgumentException if mDelayInMillis is non-positive
+     * @return the thumbnail bitmap.
      */
-    public void setDelayInMillis(int delayInMillis) {
-        if (delayInMillis <= 0)
-            throw new IllegalArgumentException("mDelayInMillis must be positive: " + delayInMillis);
-
-        this.mDelayInMillis = delayInMillis;
+    public Bitmap getThumbnail() {
+        return thumbnail;
     }
 
     /**

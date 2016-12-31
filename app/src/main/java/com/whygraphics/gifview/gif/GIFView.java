@@ -472,6 +472,8 @@ public class GIFView extends ImageView {
 
         if (mStartOnNextInit)
             start();
+        else if (mGif instanceof MovieGIF)
+            setImageBitmap(((MovieGIF) mGif).getThumbnail());
 
         if (mOnSettingGifListener != null)
             mOnSettingGifListener.onSuccess(this, e);
@@ -542,6 +544,24 @@ public class GIFView extends ImageView {
                     + getGifDuration() + ": " + seconds);
 
         mGif.setTime(seconds);
+    }
+
+    /**
+     * Returns the thumbnail bitmap.
+     * <p>
+     * If initializing the thumbnail has failed Returns null.
+     *
+     * @return the thumbnail bitmap.
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public Bitmap getThumbnail() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        if (!(mGif instanceof MovieGIF))
+            throw new UnsupportedOperationException("this method is unsupported");
+
+        return ((MovieGIF) mGif).getThumbnail();
     }
 
     /**
