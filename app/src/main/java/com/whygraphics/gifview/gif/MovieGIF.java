@@ -122,7 +122,7 @@ public class MovieGIF
         thumbnail = mBitmap.copy(config, false);
 
         if (thumbnail == null)
-            Log.e("GIFView", "GIFView: could not copy a bitmap and create the thumbnail");
+            Log.e("MovieGIF", "MovieGIF: could not copy a bitmap and create the thumbnail");
     }
 
     /**
