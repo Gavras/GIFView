@@ -12,13 +12,18 @@ public interface GIF {
      * Starts the gif.
      * If the gif is running should do nothing.
      */
-    void startGif();
+    void start();
+
+    /**
+     * Restarts the gif.
+     */
+    void restart();
 
     /**
      * Stops the gif.
      * If the gif is not running should do nothing.
      */
-    void stopGif();
+    void stop();
 
     /**
      * Should return true if the gif is currently showing, false otherwise.

@@ -40,6 +40,9 @@ public class MovieGIF
     // the start time of the gif
     private long mGifStartTime;
 
+    // the stop time of the gif
+    private long mGifStopTime;
+
     // the executor of the gif's thread
     private ScheduledExecutorService mExecutor;
 
@@ -94,8 +97,7 @@ public class MovieGIF
         this.mMainRunnable = new Runnable() {
             @Override
             public void run() {
-                draw();
-                invokeListener();
+                MovieGIF.this.run();
             }
         };
 
@@ -127,7 +129,7 @@ public class MovieGIF
             mListenerRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    MovieGIF.this.mOnFrameReadyListener.onFrameReady(mBitmap);
+                    invokeListenerOnFrameReady();
                 }
             };
 
@@ -143,48 +145,20 @@ public class MovieGIF
      */
     public void setDelayInMillis(int delayInMillis) {
         if (delayInMillis <= 0)
-            throw new IllegalArgumentException("mDelayInMillis must be positive");
+            throw new IllegalArgumentException("mDelayInMillis must be positive: " + delayInMillis);
 
         this.mDelayInMillis = delayInMillis;
     }
 
     /**
-     * Starts the gif.
-     * If the gif is running does nothing.
+     * Returns the gif duration in seconds.
+     *
+     * @return the gif duration in seconds
      */
-    @Override
-    public void startGif() {
-        if (mExecutor != null)
-            return;
+    public double getDuration() {
+        final double MILLIS_IN_ONE_SECOND = 1000.0;
 
-        mExecutor = Executors.newSingleThreadScheduledExecutor();
-
-        final int INITIAL_DELAY = 0;
-        mExecutor.scheduleWithFixedDelay(mMainRunnable, INITIAL_DELAY,
-                mDelayInMillis, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Stops the gif.
-     * If the gif is not running does nothing.
-     */
-    @Override
-    public void stopGif() {
-        if (mExecutor == null)
-            return;
-
-        mExecutor.shutdown();
-
-        // waits until the thread is finished
-        while (true) {
-            try {
-                mExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                break;
-            } catch (InterruptedException ignored) {
-            }
-        }
-
-        mExecutor = null;
+        return mMovie.duration() / MILLIS_IN_ONE_SECOND;
     }
 
     /**
@@ -197,17 +171,117 @@ public class MovieGIF
         return mExecutor != null;
     }
 
+    /**
+     * Returns the current second in the gif.
+     *
+     * @return the current second in the gif
+     */
+    public double getCurrentSecond() {
+        final double MILLIS_IN_ONE_SECOND = 1000.0;
+
+        int movieDuration = mMovie.duration();
+
+        if (isShowing())
+            return timeInGif() / MILLIS_IN_ONE_SECOND;
+        else if (mGifStopTime == 0)
+            return (mGifStartTime % movieDuration) / MILLIS_IN_ONE_SECOND;
+        else
+            return ((mGifStopTime - mGifStartTime) % movieDuration) / MILLIS_IN_ONE_SECOND;
+    }
+
+    /**
+     * Sets the time in the gif.
+     *
+     * @param seconds the time in the gif
+     */
+    public void setTime(double seconds) {
+        if (seconds < 0 || seconds > getDuration())
+            throw new IllegalArgumentException("seconds must be in the range of the gif: 0-"
+                    + getDuration() + ": " + seconds);
+
+        final long MILLIS_IN_ONE_SECOND = 1000;
+
+        long millisTimeInGif = (long) (seconds * MILLIS_IN_ONE_SECOND);
+
+        // to start in x it's like we stopped just now and started in now-x
+        mGifStartTime = SystemClock.uptimeMillis() - millisTimeInGif;
+        mGifStopTime = SystemClock.uptimeMillis();
+    }
+
+    /**
+     * Starts the gif.
+     * If the gif is running does nothing.
+     */
+    @Override
+    public void start() {
+        if (mExecutor != null)
+            return;
+
+        // start gif time is based on the last stopped time, if exists
+        mGifStartTime = SystemClock.uptimeMillis() - (mGifStopTime - mGifStartTime);
+
+        mExecutor = Executors.newSingleThreadScheduledExecutor();
+
+        final int INITIAL_DELAY = 0;
+        mExecutor.scheduleWithFixedDelay(mMainRunnable, INITIAL_DELAY,
+                mDelayInMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Restarts the gif.
+     */
+    @Override
+    public void restart() {
+        mGifStartTime = SystemClock.uptimeMillis();
+        mGifStopTime = SystemClock.uptimeMillis();
+
+        if (!isShowing())
+            start();
+    }
+
+    /**
+     * Stops the gif.
+     * If the gif is not running does nothing.
+     */
+    @Override
+    public void stop() {
+        if (mExecutor == null)
+            return;
+
+        // set the stopped time
+        mGifStopTime = SystemClock.uptimeMillis();
+
+        mExecutor.shutdown();
+
+        // waits until the thread is finished
+        while (true) {
+            try {
+                mExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                break;
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        mExecutor = null;
+    }
+
+    // returns the millis time in the gif.
+    private int timeInGif() {
+        // avoids returning negative time in rare cases with this local variable
+        long gifStartTime = mGifStartTime;
+
+        return (int) ((SystemClock.uptimeMillis() - gifStartTime) % mMovie.duration());
+    }
+
+    // the main run method
+    private void run() {
+        draw();
+        invokeListener();
+    }
+
     // calculates the frame and draws it to mBitmap through mCanvas
     private void draw() {
-        // if mGifStartTime == 0 inits it for the first time
-        if (mGifStartTime == 0)
-            mGifStartTime = SystemClock.uptimeMillis();
-
-        long timeElapsed = SystemClock.uptimeMillis() - mGifStartTime;
-
-        int timeInGif = (int) (timeElapsed % mMovie.duration());
-        mMovie.setTime(timeInGif);
-
+        mMovie.setTime(timeInGif());
         mMovie.draw(mCanvas, 0, 0);
     }
 
@@ -220,7 +294,12 @@ public class MovieGIF
         if (mListenerHandler != null)
             mListenerHandler.post(mListenerRunnable);
         else
-            mOnFrameReadyListener.onFrameReady(mBitmap);
+            invokeListenerOnFrameReady();
+    }
+
+    // invokes the method onFrameReady() of the listener
+    private void invokeListenerOnFrameReady() {
+        mOnFrameReadyListener.onFrameReady(mBitmap);
     }
 
     /**

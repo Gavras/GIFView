@@ -4,13 +4,16 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.AttributeSet;
+import android.view.View;
 import android.widget.ImageView;
 
 import com.whygraphics.gifview.R;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
@@ -18,8 +21,11 @@ import java.net.URL;
  * A view that can show gifs.
  * <p>
  * The gif starts showing automatically unless starting_on_init or setStartingOnInit()
- * were set to false or a call to startGifWhenPossible() occurred while the view is in
+ * were set to false or a call to stopWhenPossible() occurred while the view was in
  * the middle of setting the gif.
+ * <p>
+ * After using the view and if the gif is still showing,
+ * the method stopWhenPossible() should be invoked to stop the working thread.
  * <p>
  * XML Attributes:
  * <p>
@@ -38,11 +44,16 @@ import java.net.URL;
  * <p>
  * starting_on_init:
  * A boolean that represents if the view starts the gif
- * when its initialization finishes or not.
+ * when its initialization finishes or not. Default is true.
+ * <p>
+ * on_click_start_or_pause:
+ * If sets to true, every click toggles the state of the gif.
+ * If the gif is showing stops the gif, and if the gif is not showing starts it.
+ * If sets to false clicking the gif does nothing. Default is false.
  * <p>
  * delay_in_millis:
  * A positive integer that represents how many milliseconds
- * should pass between every calculation of the next frame to be set.
+ * should pass between every calculation of the next frame to be set. Default is 33.
  */
 public class GIFView extends ImageView {
 
@@ -112,6 +123,7 @@ public class GIFView extends ImageView {
         } else {
             setDelayInMillis(DEF_VAL_DELAY_IN_MILLIS);
             setStartingOnInit(true);
+            setOnClickStartOrPause(false);
         }
     }
 
@@ -130,6 +142,10 @@ public class GIFView extends ImageView {
             setDelayInMillis(typedArray.getInt(R.styleable.gif_view_delay_in_millis
                     , DEF_VAL_DELAY_IN_MILLIS));
 
+            // gets and sets the 'on click start or pause'
+            setOnClickStartOrPause(typedArray.getBoolean(R.styleable.gif_view_on_click_start_or_pause
+                    , false));
+
             // gets the source of the gif and sets it
             String string = typedArray.getString(R.styleable.gif_view_gif_src);
             if (string != null)
@@ -143,8 +159,10 @@ public class GIFView extends ImageView {
     /**
      * Returns true if the view starts the gif when its initialization finishes, false otherwise.
      * <p>
-     * Note: Calling startGifWhenPossible() or stopGifWhenPossible() while setting a gif
+     * Note: Calling startWhenPossible() or stopWhenPossible() while setting a gif
      * ignores this value.
+     * <p>
+     * See also the xml tag "starting_on_init".
      *
      * @return true if the view starts the gif when its initialization finishes, false otherwise.
      */
@@ -155,8 +173,10 @@ public class GIFView extends ImageView {
     /**
      * Sets the value for starting the gif when its initialization finishes.
      * <p>
-     * If called while setting a gif and after calling startGifWhenPossible()
-     * or stopGifWhenPossible(), cancels the changes of these methods.
+     * If called while setting a gif and after calling startWhenPossible()
+     * or stopWhenPossible(), cancels the changes of these methods.
+     * <p>
+     * See also the xml tag "starting_on_init".
      *
      * @param startingOnInit true if the gif will start as soon as it is ready, false otherwise
      */
@@ -166,14 +186,27 @@ public class GIFView extends ImageView {
     }
 
     /**
-     * Sets the delay in millis between every calculation of the next frame to be set.
+     * Returns the delay in milliseconds between every calculation of the next frame to be set.
+     * <p>
+     * See also the xml tag "delay_in_millis".
+     *
+     * @return the delay in milliseconds between every calculation of the next frame to be set
+     */
+    public int getDelayInMillis() {
+        return mDelayInMillis;
+    }
+
+    /**
+     * Sets the delay in milliseconds between every calculation of the next frame to be set.
+     * <p>
+     * See also the xml tag "delay_in_millis".
      *
      * @param delayInMillis the delay in millis
      * @throws IllegalArgumentException if delayInMillis is non-positive
      */
     public void setDelayInMillis(int delayInMillis) {
         if (delayInMillis <= 0)
-            throw new IllegalArgumentException("delayInMillis must be positive");
+            throw new IllegalArgumentException("delayInMillis must be positive: " + delayInMillis);
 
         this.mDelayInMillis = delayInMillis;
 
@@ -207,13 +240,13 @@ public class GIFView extends ImageView {
      * <p>
      * By default the gif starts showing as soon as the view finishes setting the gif.
      * Change this by calling setStartingOnInit().
-     * If a request has been made through startGifWhenPossible()
-     * or stopGifWhenPossible() while the view is setting the gif,
+     * If a request has been made through startWhenPossible()
+     * or stopWhenPossible() while the view is setting the gif,
      * the view will ignore the value returned from isStartingOnInit().
-     * The view then will start the gif if startGifWhenPossible() was called or
-     * will not start the gif if stopGifWhenPossible() was called.
+     * The view then will start the gif if startWhenPossible() was called or
+     * will not start the gif if stopWhenPossible() was called.
      * <p>
-     * Note that every exception while setting the gif is only sent to the
+     * Note: Every exception while setting the gif is only sent to the
      * OnSettingGifListener instance attached to this view.
      * <p>
      * The string passed must be in the following format:
@@ -232,88 +265,49 @@ public class GIFView extends ImageView {
      * <p>
      * for example if you have a gif in the path "assets/ex_dir/ex_gif.gif"
      * invoke the method like this: setGifResource(GIFView.RESOURCE_PREFIX_ASSET + "ex_dir/ex_gif");
+     * <p>
+     * See also the xml tag "gif_src".
+     * <p>
+     * Classes that extend this class and want to provide more ways to initialize
+     * a gif from a string should override GIFView.setGifFromString().
      *
      * @param string the string
-     * @throws IllegalArgumentException if the string format is invalid
+     * @throws IllegalArgumentException if the string is null or not in the right format
      */
     public void setGifResource(String string) {
+        if (string == null)
+            throw new IllegalArgumentException("string must not be null");
+
         if (mSettingGif)
             return;
 
         // stops the gif if it is running
         if (mGif != null)
-            mGif.stopGif();
-
-        if (!isGifResourceFormatValid(string))
-            throw new IllegalArgumentException("string format is invalid");
+            mGif.stop();
 
         // notifies setting gif has started
         mSettingGif = true;
 
-        setGifFromString(string);
-    }
+        if (string.startsWith(RESOURCE_PREFIX_URL)) {
+            new AsyncSettingOfGif<String>() {
 
-    /**
-     * Returns true if the format is valid, false otherwise.
-     * <p>
-     * Override this method to provide more ways to initialize a gif.
-     * For it to work setGifFromString() must be overridden too.
-     * <p>
-     * If setting a gif from a url or from the assets directory is still supported
-     * the overridden method should consider the results of the super method.
-     * <p>
-     * Example:
-     * <pre>
-     * return super.isGifResourceFormatValid(string) ||
-     *         string.startsWith("other prefix:");</pre>
-     *
-     * @param string the string passed to setGifResource()
-     * @return true if the format is valid, false otherwise
-     */
-    protected boolean isGifResourceFormatValid(String string) {
-        return string.startsWith(RESOURCE_PREFIX_URL) ||
-                string.startsWith(RESOURCE_PREFIX_ASSET);
-    }
-
-    /**
-     * Sets the gif according to the specified format.
-     * <p>
-     * Override this method to provide more ways to initialize a gif.
-     * For it to work isGifResourceFormatValid() must be overridden too
-     * and a AsyncSettingOfGif should be initialized and executed.
-     * <p>
-     * If setting a gif from a url or from the assets directory is still supported
-     * the overridden method should consider the super method.
-     * <p>
-     * Example:
-     * <pre>
-     * if (string.startsWith("other prefix:"))
-     *     new AsyncSettingOfGif(){}.execute(string);
-     * else
-     *     super.setGifFromString(string);</pre>
-     *
-     * @param string the string passed to setGifResource()
-     */
-    protected void setGifFromString(String string) {
-        if (string.startsWith(RESOURCE_PREFIX_URL))
-            new AsyncSettingOfGif() {
                 @Override
-                protected String formatString(String string) {
+                protected InputStream getGifInputStream(String string) throws Exception {
                     final int URL_START_INDEX = RESOURCE_PREFIX_URL.length();
-                    return string.substring(URL_START_INDEX);
-                }
+                    String url = string.substring(URL_START_INDEX);
 
-                @Override
-                protected InputStream getGifInputStream(String url) throws Exception {
                     // gets the input stream from the url
                     return (InputStream) new URL(url).getContent();
                 }
+
             }.execute(string);
 
-        else if (string.startsWith(RESOURCE_PREFIX_ASSET))
-            new AsyncSettingOfGif() {
+        } else if (string.startsWith(RESOURCE_PREFIX_ASSET)) {
+            new AsyncSettingOfGif<String>() {
+
                 @Override
-                protected String formatString(String string) {
+                protected InputStream getGifInputStream(String string) throws Exception {
+                    // gets the path of the gif
                     final int ASSET_START_INDEX = RESOURCE_PREFIX_ASSET.length();
                     final String GIF_EXTENSION = ".gif";
 
@@ -322,15 +316,100 @@ public class GIFView extends ImageView {
                     if (!assetPath.endsWith(GIF_EXTENSION))
                         assetPath += GIF_EXTENSION;
 
-                    return assetPath;
-                }
-
-                @Override
-                protected InputStream getGifInputStream(String assetPath) throws Exception {
                     // gets the input stream from the assets directory
                     return GIFView.this.getResources().getAssets().open(assetPath);
                 }
+
             }.execute(string);
+
+        } else {
+            // for extending classes that want to provide more ways to init a gif
+            boolean isStringFormatLegal = setGifFromString(string);
+
+            if (!isStringFormatLegal) {
+                mSettingGif = false;
+                throw new IllegalArgumentException("string format is invalid: " + string);
+            }
+        }
+    }
+
+    /**
+     * * Sets the gif of this view and starts it.
+     * <p>
+     * If the view has already begun setting another gif, does nothing.
+     * You can query this state with isSettingGif().
+     * <p>
+     * By default the gif starts showing as soon as the view finishes setting the gif.
+     * Change this by calling setStartingOnInit().
+     * If a request has been made through startWhenPossible()
+     * or stopWhenPossible() while the view is setting the gif,
+     * the view will ignore the value returned from isStartingOnInit().
+     * The view then will start the gif if startWhenPossible() was called or
+     * will not start the gif if stopWhenPossible() was called.
+     * <p>
+     * Note: Every exception while setting the gif is only sent to the
+     * OnSettingGifListener instance attached to this view.
+     * <p>
+     * Note: When the view finishes setting the gif, the passed input stream is closed.
+     *
+     * @param in the input stream
+     * @throws IllegalArgumentException if in is null
+     */
+    public void setGifResource(InputStream in) {
+        if (in == null)
+            throw new IllegalArgumentException("in must not be null");
+
+        if (mSettingGif)
+            return;
+
+        // stops the gif if it is running
+        if (mGif != null)
+            mGif.stop();
+
+        // notifies setting gif has started
+        mSettingGif = true;
+
+        new AsyncSettingOfGif<InputStream>() {
+
+            @Override
+            protected InputStream getGifInputStream(InputStream in) {
+                // the input stream for the gif is simply the passed input stream
+                return in;
+            }
+
+        }.execute(in);
+    }
+
+    /**
+     * Sets the gif from the specified string.
+     * Returns true if the string is in the right format, false otherwise.
+     * <p>
+     * To override this method you should create an instance of
+     * GIFView.AsyncSettingOfGif and execute it.
+     * <p>
+     * For example if you want to add support for raw resource directory:
+     * <pre>
+     * if (!string.startsWith("raw:"))
+     *     return false;
+     *
+     * new AsyncSettingOfGif< String>() {
+     *     protected InputStream getGifInputStream(String resource) throws Exception {
+     *         // return the input stream
+     *     }
+     * }.execute(string);
+     *
+     * return true;
+     * </pre>
+     *
+     * @param string the string
+     * @return true if the string is in the right format, false otherwise
+     */
+    protected boolean setGifFromString(String string) {
+        /*
+        * For extending classes only.
+        * Normally the string is initialized from GIFView.setGifResource().
+        * */
+        return false;
     }
 
     // called when the view finished setting the gif
@@ -339,7 +418,7 @@ public class GIFView extends ImageView {
         mSettingGif = false;
 
         if (mGif != null)
-            onSuccess();
+            onSuccess(e);
         else
             onFailure(e);
 
@@ -348,17 +427,18 @@ public class GIFView extends ImageView {
     }
 
     // on finish setting the gif
-    private void onSuccess() {
+    private void onSuccess(Exception e) {
         MovieGIF movieGIF = ((MovieGIF) mGif);
 
         movieGIF.setOnFrameReadyListener(mGifOnFrameReadyListener, getHandler());
         movieGIF.setDelayInMillis(mDelayInMillis);
 
-        if (mStartOnNextInit)
-            startGif();
+        if (mStartOnNextInit) {
+            start();
+        }
 
         if (mOnSettingGifListener != null)
-            mOnSettingGifListener.onSuccess(this);
+            mOnSettingGifListener.onSuccess(this, e);
     }
 
     // when an exception has occurred while trying to set the gif
@@ -368,63 +448,12 @@ public class GIFView extends ImageView {
     }
 
     /**
-     * Starts the gif.
-     * If the gif is running does nothing.
-     * <p>
-     * This method throws an exception if the gif has not been initialized or isSettingGif() is true
-     * and thus serves as an alternative to startGifWhenPossible().
+     * Returns true if a gif has been initialized, false otherwise.
      *
-     * @throws IllegalStateException if the gif has not been initialized yet
+     * @return true if a gif has been initialized, false otherwise
      */
-    public void startGif() {
-        if (mGif == null || mSettingGif)
-            throw new IllegalStateException("the gif has not been initialized yet");
-
-        mGif.startGif();
-    }
-
-    /**
-     * Starts the gif when possible.
-     * If the gif is running does nothing.
-     * If isSettingGif() is true the gif will start when it finishes.
-     * <p>
-     * Note: it does not change the result of isStartingOnInit().
-     */
-    public void startGifWhenPossible() {
-        if (mSettingGif)
-            mStartOnNextInit = true;
-        else if (mGif != null)
-            mGif.startGif();
-    }
-
-    /**
-     * Stops the gif.
-     * If the gif is not running does nothing.
-     * <p>
-     * This method throws an exception if the gif has not been initialized or isSettingGif() is true
-     * and thus serves as an alternative to stopGifWhenPossible().
-     *
-     * @throws IllegalStateException if the gif has not been initialized yet
-     */
-    public void stopGif() {
-        if (mGif == null || mSettingGif)
-            throw new IllegalStateException("the gif has not been initialized yet");
-
-        mGif.stopGif();
-    }
-
-    /**
-     * Stops the gif when possible.
-     * If the gif is not running does nothing.
-     * If isSettingGif() is true the gif does not start when it finishes.
-     * <p>
-     * Note: it does not change the result of isStartingOnInit().
-     */
-    public void stopGifWhenPossible() {
-        if (mSettingGif)
-            mStartOnNextInit = false;
-        else if (isShowingGif())
-            mGif.stopGif();
+    public boolean isGifInitialized() {
+        return mGif != null && !mSettingGif;
     }
 
     /**
@@ -437,16 +466,164 @@ public class GIFView extends ImageView {
     }
 
     /**
+     * Returns the current gif duration in seconds.
+     *
+     * @return the current gif duration in seconds
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public double getGifDuration() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        return ((MovieGIF) mGif).getDuration();
+    }
+
+    /**
+     * Returns the current second in the gif.
+     *
+     * @return the current second in the gif
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public double getCurrentSecond() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        return ((MovieGIF) mGif).getCurrentSecond();
+    }
+
+    /**
+     * Sets the time in the gif.
+     *
+     * @param seconds the time in the gif
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public void setTimeInGif(double seconds) {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        if (seconds < 0 || seconds > getGifDuration())
+            throw new IllegalArgumentException("seconds must be in the range of the gif: 0-"
+                    + getGifDuration() + ": " + seconds);
+
+        ((MovieGIF) mGif).setTime(seconds);
+    }
+
+    /**
+     * Starts the gif.
+     * If the gif is running does nothing.
+     * <p>
+     * This method throws an exception if the gif has not been initialized or isSettingGif() is true
+     * and thus serves as an alternative to startWhenPossible().
+     *
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public void start() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        mGif.start();
+    }
+
+    /**
+     * Starts the gif when possible.
+     * If the gif is running does nothing.
+     * If isSettingGif() is true the gif will start when it finishes.
+     * <p>
+     * Note: it does not change the result of isStartingOnInit().
+     */
+    public void startWhenPossible() {
+        if (mSettingGif)
+            mStartOnNextInit = true;
+        else if (mGif != null)
+            mGif.start();
+    }
+
+    /**
+     * Restarts the gif.
+     *
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public void restart() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        mGif.restart();
+    }
+
+    /**
+     * Stops the gif.
+     * If the gif is not running does nothing.
+     * <p>
+     * This method throws an exception if the gif has not been initialized or isSettingGif() is true
+     * and thus serves as an alternative to stopWhenPossible().
+     *
+     * @throws IllegalStateException if the gif has not been initialized yet
+     */
+    public void stop() {
+        if (!isGifInitialized())
+            throw new IllegalStateException("the gif has not been initialized yet");
+
+        mGif.stop();
+    }
+
+    /**
+     * Stops the gif when possible.
+     * If the gif is not running does nothing.
+     * If isSettingGif() is true the gif does not start when it finishes.
+     * <p>
+     * Note: it does not change the result of isStartingOnInit().
+     */
+    public void stopWhenPossible() {
+        if (mSettingGif)
+            mStartOnNextInit = false;
+        else if (isShowingGif())
+            mGif.stop();
+    }
+
+    /**
+     * If sets to true, every click toggles the state of the gif.
+     * If the gif is showing stops the gif, and if the gif is not showing starts it.
+     * If sets to false clicking the gif does nothing.
+     * <p>
+     * Default is false.
+     * <p>
+     * See also the xml tag on_click_start_or_pause
+     *
+     * @param flag to start or pause the gif on click, or not
+     */
+    public void setOnClickStartOrPause(boolean flag) {
+        // if true set the listener
+        if (flag)
+            setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    if (isShowingGif())
+                        stopWhenPossible();
+                    else
+                        startWhenPossible();
+                }
+            });
+
+            // if false nullify the listener
+        else
+            setOnClickListener(null);
+    }
+
+    /**
      * Interface definition for callbacks to be invoked when setting a gif.
      */
     public interface OnSettingGifListener {
 
         /**
          * Called when a gif has successfully been set.
+         * <p>
+         * If one or more exceptions occurred but the gif has successfully been set
+         * e will store the exceptions.
          *
          * @param view the GIFView
          */
-        void onSuccess(GIFView view);
+        void onSuccess(GIFView view, Exception e);
 
         /**
          * Called when a gif cannot be set.
@@ -482,64 +659,77 @@ public class GIFView extends ImageView {
     /**
      * A sub-class of AsyncTask to easily perform an async task of setting a gif.
      * <p>
-     * The default implementation of AsyncSettingOfGif.doInBackground() is to try and initialize the gif
-     * from the input stream returned from AsyncSettingOfGif.getGifInputStream(),
-     * passing to it the string from AsyncSettingOfGif.formatString(), and notify
+     * The default implementation of AsyncSettingOfGif.doInBackground() is to try and initialize
+     * the gif from the input stream returned from AsyncSettingOfGif.getGifInputStream(),
+     * passing to it the resource from AsyncTask.execute(), and notify
      * the view when it finishes, sending to it the exception from
      * AsyncSettingOfGif.prepareExceptionToSend(), if occurred.
      * <p>
      * Implementations of this class should override AsyncSettingOfGif.getGifInputStream()
-     * to return the right input stream for the gif based on the string argument.
-     * The string argument can be, for example, a url to retrieve the input stream from.
+     * to return the right input stream for the gif based on the resource passed to it.
+     * The resource can be, for example, a url string to retrieve the input stream from.
      */
-    protected abstract class AsyncSettingOfGif extends AsyncTask<String, Void, Exception> {
+    protected abstract class AsyncSettingOfGif<T> extends AsyncTask<T, Void, Void> {
+
+        // the exception to pass to the listener
+        private Exception e;
 
         /**
-         * This method tries to initialize the gif based on the specified string
-         * and sends to onPostExecute() any exceptions that occur.
+         * This method tries to initialize the gif based on the specified resource
+         * and invokes onPostExecute() with any exceptions that occur.
          *
-         * @param string a string that represents a gif resource
-         * @return exceptions caught while executing
+         * @param resource the resource of the gif
+         * @return null
          */
         @Override
-        protected Exception doInBackground(String... string) {
-            Exception exceptionToSend = null;
-
-            String formattedString = formatString(string[0]);
-
-            try (InputStream in = getGifInputStream(formattedString)) {
+        protected Void doInBackground(T... resource) {
+            InputStream in = null;
+            try {
+                // gets the input stream for the gif from method manipulateResource()
+                in = getGifInputStream(resource[0]);
                 // tries to init mGif
                 mGif = new MovieGIF(in);
 
             } catch (Exception e) {
-                exceptionToSend = prepareExceptionToSend(e);
+                this.e = prepareExceptionToSend(e);
+
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+
+                    } catch (IOException e) {
+
+                        // if the exception to pass is null make new one
+                        if (this.e == null)
+                            this.e = prepareExceptionToSend(e);
+
+                            /*
+                            * If the exception already exists adds the current exception to the suppressed array.
+                            * Note: Works only in API 19 and above
+                            * */
+                        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            this.e.addSuppressed(e);
+                        }
+                    }
+                }
+
             }
 
-            return exceptionToSend;
+            return null;
         }
-
-        /**
-         * Returns a string with which getGifInputStream() can get a gif resource.
-         * <p>
-         * Override this method to return the right string getGifInputStream() needs
-         * in order to get the gif's resource.
-         *
-         * @param string a string that represents a gif resource
-         * @return the formatted string for getting the resource
-         */
-        protected abstract String formatString(String string);
 
         /**
          * Returns an input stream of a gif.
          * <p>
-         * Override this method to return the right input stream for the gif based on the string argument.
-         * The string argument can be, for example, a url to retrieve the input stream from.
+         * Override this method to return the right input stream
+         * for the gif based on the specified resource.
          *
-         * @param string the string
+         * @param resource the resource
          * @return an InputStream of a gif
          * @throws Exception if an exception has occurred
          */
-        protected abstract InputStream getGifInputStream(String string) throws Exception;
+        protected abstract InputStream getGifInputStream(T resource) throws Exception;
 
         /**
          * Called when an exception has occurred.
@@ -559,20 +749,24 @@ public class GIFView extends ImageView {
 
             Exception returnedException = new CannotInitGifException(message);
 
-            // adds the suppressed exceptions, if exist
-            for (Throwable throwable : e.getSuppressed())
-                returnedException.addSuppressed(throwable);
+            /*
+            * Adds the suppressed exceptions, if exist.
+            * Note: Works only in API 19 and above
+            * */
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+                for (Throwable throwable : e.getSuppressed())
+                    returnedException.addSuppressed(throwable);
 
             return returnedException;
         }
 
         /**
-         * This method returns to the view with the exception passed by doInBackground().
+         * This method returns to the view with any exception occurred in doInBackground().
          *
-         * @param e the Exception
+         * @param aVoid null
          */
         @Override
-        protected void onPostExecute(Exception e) {
+        protected void onPostExecute(Void aVoid) {
             onFinishSettingGif(e);
         }
     }

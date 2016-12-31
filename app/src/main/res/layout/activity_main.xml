@@ -12,5 +12,6 @@
         android:layout_centerInParent="true"
         android:scaleType="center"
         gif_view:delay_in_millis="@integer/gif_view_delay_in_millis"
-        gif_view:gif_src="@string/gif1_asset_path" />
+        gif_view:gif_src="@string/gif1_asset_path"
+        gif_view:on_click_start_or_pause="true" />
 </RelativeLayout>
