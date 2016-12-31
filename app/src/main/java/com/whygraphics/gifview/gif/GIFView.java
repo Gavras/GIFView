@@ -24,8 +24,8 @@ import java.net.URL;
  * were set to false or a call to stopWhenPossible() occurred while the view was in
  * the middle of setting the gif.
  * <p>
- * After using the view and if the gif is still showing,
- * the method stopWhenPossible() should be invoked to stop the working thread.
+ * After the view is no longer going to be in the
+ * presenting layout calling clear() is recommended.
  * <p>
  * XML Attributes:
  * <p>
@@ -72,9 +72,7 @@ public class GIFView extends ImageView {
     // the gif instance
     private GIF mGif;
 
-    private boolean mRegularlyStartOnInit;
-
-    private boolean mStartOnNextInit;
+    private boolean mStartingOnInit;
 
     // the delay in millis between frames
     private int mDelayInMillis;
@@ -84,6 +82,8 @@ public class GIFView extends ImageView {
 
     // keeps track if the view is in the middle of setting the gif
     private boolean mSettingGif;
+
+    private OwnOnSettingGifListener mOwnOnSettingGifListener;
 
     private MovieGIF.OnFrameReadyListener mGifOnFrameReadyListener;
 
@@ -110,6 +110,8 @@ public class GIFView extends ImageView {
 
     // inits the view
     private void init(AttributeSet attrs) {
+        this.mOwnOnSettingGifListener = new OwnOnSettingGifListener();
+
         this.mGifOnFrameReadyListener = new MovieGIF.OnFrameReadyListener() {
             @Override
             public void onFrameReady(Bitmap bitmap) {
@@ -167,7 +169,7 @@ public class GIFView extends ImageView {
      * @return true if the view starts the gif when its initialization finishes, false otherwise.
      */
     public boolean isStartingOnInit() {
-        return mRegularlyStartOnInit;
+        return mStartingOnInit;
     }
 
     /**
@@ -181,8 +183,8 @@ public class GIFView extends ImageView {
      * @param startingOnInit true if the gif will start as soon as it is ready, false otherwise
      */
     public void setStartingOnInit(boolean startingOnInit) {
-        this.mStartOnNextInit = startingOnInit;
-        this.mRegularlyStartOnInit = startingOnInit;
+        this.mStartingOnInit = startingOnInit;
+        mOwnOnSettingGifListener.mStartOnNextInit = startingOnInit;
     }
 
     /**
@@ -224,6 +226,36 @@ public class GIFView extends ImageView {
      */
     public void setOnSettingGifListener(OnSettingGifListener onSettingGifListener) {
         this.mOnSettingGifListener = onSettingGifListener;
+    }
+
+    /**
+     * If sets to true, every click toggles the state of the gif.
+     * If the gif is showing stops the gif, and if the gif is not showing starts it.
+     * If sets to false clicking the gif does nothing.
+     * <p>
+     * Default is false.
+     * <p>
+     * See also the xml tag on_click_start_or_pause
+     *
+     * @param flag to start or pause the gif on click, or not
+     */
+    public void setOnClickStartOrPause(boolean flag) {
+        // if true set the listener
+        if (flag)
+            setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    if (isShowingGif())
+                        stopWhenPossible();
+                    else
+                        startWhenPossible();
+                }
+            });
+
+            // if false nullify the listener
+        else
+            setOnClickListener(null);
     }
 
     /**
@@ -457,9 +489,6 @@ public class GIFView extends ImageView {
             onSuccess(e);
         else
             onFailure(e);
-
-        // after onFinishSettingGif() sets this one-time boolean to the value of mRegularlyStartOnInit
-        mStartOnNextInit = mRegularlyStartOnInit;
     }
 
     // on finish setting the gif
@@ -468,12 +497,13 @@ public class GIFView extends ImageView {
             MovieGIF movieGIF = ((MovieGIF) mGif);
             movieGIF.setOnFrameReadyListener(mGifOnFrameReadyListener, getHandler());
             movieGIF.setDelayInMillis(mDelayInMillis);
+            setImageBitmap(movieGIF.getThumbnail());
         }
 
-        if (mStartOnNextInit)
+        if (mStartingOnInit)
             start();
-        else if (mGif instanceof MovieGIF)
-            setImageBitmap(((MovieGIF) mGif).getThumbnail());
+
+        mOwnOnSettingGifListener.onSuccess(this, e);
 
         if (mOnSettingGifListener != null)
             mOnSettingGifListener.onSuccess(this, e);
@@ -481,6 +511,8 @@ public class GIFView extends ImageView {
 
     // when an exception has occurred while trying to set the gif
     private void onFailure(Exception e) {
+        mOwnOnSettingGifListener.onFailure(this, e);
+
         if (mOnSettingGifListener != null)
             mOnSettingGifListener.onFailure(this, e);
     }
@@ -589,7 +621,7 @@ public class GIFView extends ImageView {
      */
     public void startWhenPossible() {
         if (mSettingGif)
-            mStartOnNextInit = true;
+            mOwnOnSettingGifListener.mStartOnNextInit = true;
         else if (mGif != null)
             mGif.start();
     }
@@ -631,39 +663,33 @@ public class GIFView extends ImageView {
      */
     public void stopWhenPossible() {
         if (mSettingGif)
-            mStartOnNextInit = false;
+            mOwnOnSettingGifListener.mStartOnNextInit = false;
         else if (isShowingGif())
             mGif.stop();
     }
 
     /**
-     * If sets to true, every click toggles the state of the gif.
-     * If the gif is showing stops the gif, and if the gif is not showing starts it.
-     * If sets to false clicking the gif does nothing.
-     * <p>
-     * Default is false.
-     * <p>
-     * See also the xml tag on_click_start_or_pause
-     *
-     * @param flag to start or pause the gif on click, or not
+     * Clears the view and returns it to the default state.
+     * If isSettingGif() is true the view clears after it finishes setting the gif.
      */
-    public void setOnClickStartOrPause(boolean flag) {
-        // if true set the listener
-        if (flag)
-            setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View view) {
-
-                    if (isShowingGif())
-                        stopWhenPossible();
-                    else
-                        startWhenPossible();
-                }
-            });
-
-            // if false nullify the listener
+    public void clear() {
+        if (mSettingGif)
+            mOwnOnSettingGifListener.mClear = true;
         else
-            setOnClickListener(null);
+            clearView();
+    }
+
+    // clears the view
+    private void clearView() {
+        if (isShowingGif())
+            mGif.stop();
+
+        mGif = null;
+        setStartingOnInit(true);
+        setDelayInMillis(DEF_VAL_DELAY_IN_MILLIS);
+        setOnSettingGifListener(null);
+        setOnClickStartOrPause(false);
+        setImageBitmap(null);
     }
 
     /**
@@ -693,7 +719,7 @@ public class GIFView extends ImageView {
     /**
      * Definition of an Exception class to throw when the view cannot initialize the gif.
      */
-    public static class CannotInitGifException extends Exception {
+    protected static class CannotInitGifException extends Exception {
 
         /**
          * Creates a new instance.
@@ -709,6 +735,54 @@ public class GIFView extends ImageView {
          */
         public CannotInitGifException(String message) {
             super(message);
+        }
+    }
+
+    /*
+     * A class for handling situations when the view needs to do something
+     * and the gif is not ready yet. Saves the procedures and do them when
+     * the gif is ready.
+     */
+    private class OwnOnSettingGifListener implements OnSettingGifListener {
+
+        boolean mStartOnNextInit = true;
+
+        boolean mClear = false;
+
+        @Override
+        public void onSuccess(GIFView view, Exception e) {
+            handleStartOnNextInit();
+            handleClear();
+        }
+
+        @Override
+        public void onFailure(GIFView view, Exception e) {
+            handleClear();
+        }
+
+        // handles start on next init
+        private void handleStartOnNextInit() {
+            // proceed just if mStartOnNextInit is different from the current behaviour of this view
+            if (mStartOnNextInit == isStartingOnInit())
+                return;
+
+            if (mStartOnNextInit)
+                start();
+            else
+                stop();
+
+            // returns it to the original state
+            mStartOnNextInit = isStartingOnInit();
+        }
+
+        // handles clear
+        private void handleClear() {
+            if (mClear) {
+                clearView();
+
+                // returns it ot the original state
+                mClear = false;
+            }
         }
     }
 

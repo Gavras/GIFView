@@ -62,7 +62,7 @@ public class MovieGIF
     private Runnable mListenerRunnable;
 
     // the first bitmap of this gif
-    private Bitmap thumbnail;
+    private Bitmap mThumbnail;
 
     /**
      * Creates Gif instance based on the passed InputStream.
@@ -119,9 +119,9 @@ public class MovieGIF
         if (config == null)
             config = DEF_VAL_CONFIG;
 
-        thumbnail = mBitmap.copy(config, false);
+        mThumbnail = mBitmap.copy(config, false);
 
-        if (thumbnail == null)
+        if (mThumbnail == null)
             Log.e("MovieGIF", "MovieGIF: could not copy a bitmap and create the thumbnail");
     }
 
@@ -188,7 +188,7 @@ public class MovieGIF
      * @return the thumbnail bitmap.
      */
     public Bitmap getThumbnail() {
-        return thumbnail;
+        return mThumbnail;
     }
 
     /**
