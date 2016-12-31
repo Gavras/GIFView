@@ -155,6 +155,7 @@ public class MovieGIF
      *
      * @return the gif duration in seconds
      */
+    @Override
     public double getDuration() {
         final double MILLIS_IN_ONE_SECOND = 1000.0;
 
@@ -176,6 +177,7 @@ public class MovieGIF
      *
      * @return the current second in the gif
      */
+    @Override
     public double getCurrentSecond() {
         final double MILLIS_IN_ONE_SECOND = 1000.0;
 
@@ -194,6 +196,7 @@ public class MovieGIF
      *
      * @param seconds the time in the gif
      */
+    @Override
     public void setTime(double seconds) {
         if (seconds < 0 || seconds > getDuration())
             throw new IllegalArgumentException("seconds must be in the range of the gif: 0-"
