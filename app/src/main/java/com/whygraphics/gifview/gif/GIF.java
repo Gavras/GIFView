@@ -1,10 +1,10 @@
 package com.whygraphics.gifview.gif;
 
 /**
- * Interface of a GIF.
+ * A contract for a GIF.
  * <p>
- * A GIF instance should be able to start itself, stop itself and
- * provides information whether it is showing or not.
+ * A GIF instance should be able to change its state, like starting or stopping itself
+ * and enable queries about its state, like its duration.
  */
 public interface GIF {
 
