@@ -5,12 +5,16 @@ GIFView is a library for showing GIFs in applications.
  
  starting_on_init:
  A boolean that represents if the view starts the gif
- when its initialization finishes or not.
+ when its initialization finishes or not. Default is true.
  
+ on_click_start_or_pause:
+ If sets to true, every click toggles the state of the gif.
+ If the gif is showing stops the gif, and if the gif is not showing starts it.
+ If sets to false clicking the gif does nothing. Default is false.
  
  delay_in_millis:
  A positive integer that represents how many milliseconds
- should pass between every calculation of the next frame to be set.
+ should pass between every calculation of the next frame to be set. Default is 33.
  
  gif_src:
  A string that represents the gif's source.
@@ -43,7 +47,7 @@ GIFView mGifView = (GIFView) findViewById(R.id.main_activity_gif_vie);
         
 mGifView.setOnSettingGifListener(new GIFView.OnSettingGifListener() {
             @Override
-            public void onSuccess(GIFView view) {
+            public void onSuccess(GIFView view, Exception e) {
                 Toast.makeText(MainActivity.this, "onSuccess()", Toast.LENGTH_SHORT).show();
             }
 
