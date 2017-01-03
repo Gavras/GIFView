@@ -1,6 +1,28 @@
 # GIFView
 GIFView is a library for showing GIFs in applications.
 
+## Setup
+
+In your project's build.gradle file:
+```
+allprojects {
+    repositories {
+        ...
+        maven { 
+            url "https://jitpack.io"
+        }
+        ...
+    }
+}
+```
+In your Application's or Module's build.gradle file:
+```
+dependencies {
+    ...
+    compile 'com.github.Gavras:GIFView:1.0'
+    ...
+}
+```
 ## XML Attributes:
  
  starting_on_init:
