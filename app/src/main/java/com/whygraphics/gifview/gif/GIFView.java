@@ -438,6 +438,23 @@ public class GIFView extends ImageView {
     }
 
     /**
+     * Instantiates and returns a new gif instance from the passed input stream.
+     * <p>
+     * Called during the async task of setting a gif from a worker thread.
+     * Closes the stream after the method.
+     * <p>
+     * Override this if you want to use different gif instance that uses input stream
+     * for its instantiation.
+     *
+     * @param in the input stream
+     * @return a new gif instance
+     * @throws Exception if any exception occurred
+     */
+    protected GIF initGifFromInputStream(InputStream in) throws Exception {
+        return new MovieGIF(in);
+    }
+
+    /**
      * Prepares the view before setting the gif.
      * <p>
      * Returns true if it ok to initialize a gif, false otherwise.
@@ -817,8 +834,8 @@ public class GIFView extends ImageView {
             try {
                 // gets the input stream for the gif from method manipulateResource()
                 in = getGifInputStream(resource[0]);
-                // tries to init mGif
-                return new MovieGIF(in);
+                // tries to init a gif
+                return GIFView.this.initGifFromInputStream(in);
 
             } catch (Exception e) {
                 this.e = prepareExceptionToSend(e);
