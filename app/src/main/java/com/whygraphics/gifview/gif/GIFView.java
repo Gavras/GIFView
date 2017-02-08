@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
@@ -512,7 +513,15 @@ public class GIFView extends ImageView {
     private void onSuccess(Exception e) {
         if (mGif instanceof MovieGIF) {
             MovieGIF movieGIF = ((MovieGIF) mGif);
-            movieGIF.setOnFrameReadyListener(mGifOnFrameReadyListener, getHandler());
+
+            /*
+             * If the view is attached, sets the listener and the handler,
+             * if not this is done in onAttachedToWindow().
+             */
+            Handler handler = getHandler();
+            if (handler != null)
+                movieGIF.setOnFrameReadyListener(mGifOnFrameReadyListener, handler);
+
             movieGIF.setDelayInMillis(mDelayInMillis);
             setImageBitmap(movieGIF.getThumbnail());
         }
@@ -524,6 +533,23 @@ public class GIFView extends ImageView {
 
         if (mOnSettingGifListener != null)
             mOnSettingGifListener.onSuccess(this, e);
+    }
+
+    /**
+     * Called when the view was attached.
+     */
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+
+        /*
+         * If there is a loaded gif before the view was attached
+         * sets the listener and the handler here.
+         */
+        if (mGif instanceof MovieGIF) {
+            MovieGIF movieGIF = ((MovieGIF) mGif);
+            movieGIF.setOnFrameReadyListener(mGifOnFrameReadyListener, getHandler());
+        }
     }
 
     // when an exception has occurred while trying to set the gif
@@ -832,7 +858,7 @@ public class GIFView extends ImageView {
         protected final GIF doInBackground(T... resource) {
             InputStream in = null;
             try {
-                // gets the input stream for the gif from method manipulateResource()
+                // gets the input stream for the gif
                 in = getGifInputStream(resource[0]);
                 // tries to init a gif
                 return GIFView.this.initGifFromInputStream(in);

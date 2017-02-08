@@ -25,8 +25,6 @@ import java.util.concurrent.TimeUnit;
 public class MovieGIF
         implements GIF {
 
-    private static final Bitmap.Config DEF_VAL_CONFIG = Bitmap.Config.RGB_565;
-
     private static final int DEF_VAL_DELAY_IN_MILLIS = 33;
 
     // the gif's frames are stored in a movie instance
@@ -72,19 +70,20 @@ public class MovieGIF
      * @throws InputStreamIsEmptyOrUnavailableException if in is empty or unavailable
      */
     public MovieGIF(InputStream in) {
-        this(in, DEF_VAL_CONFIG);
+        this(in, true);
     }
 
     /**
-     * Creates Gif instance based on the passed InputStream and the config.
+     * Creates Gif instance based on the passed InputStream and highQuality.
+     * <p>
+     * If highQuality is true the instance also supports alpha channel.
      *
-     * @param in     the InputStream
-     * @param config the Config
-     * @throws NullPointerException                     if config is null
+     * @param in          the InputStream
+     * @param highQuality is alpha channel supported
      * @throws InputStreamIsNull                        if in is null
      * @throws InputStreamIsEmptyOrUnavailableException if in is empty or unavailable
      */
-    public MovieGIF(InputStream in, Bitmap.Config config) {
+    public MovieGIF(InputStream in, boolean highQuality) {
         if (in == null)
             throw new InputStreamIsNull("the input stream is null");
 
@@ -93,7 +92,8 @@ public class MovieGIF
         if (mMovie == null)
             throw new InputStreamIsEmptyOrUnavailableException("the input steam is empty or unavailable");
 
-        this.mBitmap = Bitmap.createBitmap(mMovie.width(), mMovie.height(), config);
+        this.mBitmap = Bitmap.createBitmap(mMovie.width(), mMovie.height(),
+                highQuality ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
 
         // associates mCanvas with mBitmap
         this.mCanvas = new Canvas(mBitmap);
@@ -117,7 +117,7 @@ public class MovieGIF
 
         Bitmap.Config config = mBitmap.getConfig();
         if (config == null)
-            config = DEF_VAL_CONFIG;
+            config = Bitmap.Config.ARGB_8888;
 
         mThumbnail = mBitmap.copy(config, false);
 
