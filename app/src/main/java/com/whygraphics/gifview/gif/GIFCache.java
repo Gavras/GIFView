@@ -16,7 +16,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * The GIFCache class takes care of downloading and caching of GIF files.
+ * <p>The GIFCache class takes care of downloading and caching of GIF files.</p>
+ *
+ * <p>All downloaded files are stored in the implementing app's own cache-directory, under a
+ * sub-directory called "GIFView". The exact path can be retrieved using the method
+ * {@link #getCacheSubDir()}, which will return a {@link File} object representing that
+ * directory.</p>
  *
  */
 class GIFCache {
