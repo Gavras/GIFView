@@ -18,9 +18,6 @@ import java.security.NoSuchAlgorithmException;
 /**
  * The GIFCache class takes care of downloading and caching of GIF files.
  *
- * @author seifert
- * @version 1.0
- * @since 1.0
  */
 class GIFCache {
     private static final String HASH_MD5 = "MD5";
