@@ -33,7 +33,8 @@ public class GIFCache {
         this.url = url;
 
         try {
-            cachedGIF = new File(context.getCacheDir() + File.pathSeparator + bytesToHex(computeHash(url)));
+            cachedGIF = new File(context.getCacheDir() + File.separator + bytesToHex(computeHash
+                    (url)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         } catch (UnsupportedEncodingException e) {
@@ -49,20 +50,23 @@ public class GIFCache {
     }
 
     private void downloadGIF() throws IOException {
-        BufferedInputStream bis = null;
+        InputStream bis = null;
         BufferedOutputStream bos = null;
 
         try {
-            bis = new BufferedInputStream((InputStream) new URL(url).getContent());
+            bis = (InputStream) new URL(url).getContent();
             bos = new BufferedOutputStream(new FileOutputStream(cachedGIF));
 
             byte[] bytes = new byte[BUFFER_SIZE];
             int bytesRead;
-
+            boolean hasBytes;
             do {
                 bytesRead = bis.read(bytes);
-                bos.write(bytes, 0, bytesRead);
-            } while (bytesRead > 0);
+                hasBytes = bytesRead != -1;
+                if(hasBytes) {
+                    bos.write(bytes, 0, bytesRead);
+                }
+            } while (hasBytes);
 
             bos.flush();
         } finally {
