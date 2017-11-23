@@ -84,3 +84,24 @@ Setting the gif programmatically:
 ```java
 mGifView.setGifResource("asset:gif1");
 ```
+
+## File Caching
+
+GIFView is caching all GIF files it downloads when being provided with an URL to an image. If an
+InputStream is used, no caching is performed.
+
+The caching works as follows:
+
+The GIFView initializes the GIFCache class with the URL provided by the caller. The GIFCache
+class now checks for the existence of the sub-directory "GIFView" within the app's own
+cache-directory. If that is not found, it will be created and the GIF-image will be downloaded
+into it. If it does exist, the existence of the GIF-image is checked, and if found, the
+cached-version will be provided. If the image is not found, it will be downloaded and then the
+cached file will be used.
+
+In order to clear the cached files programmatically, GIFCache offers the possibility to retrieve
+the folder as a java.io.File object by calling the static method getCacheSubDir():
+
+```java
+File GIFCache.getCacheSubDir(Context context);
+```

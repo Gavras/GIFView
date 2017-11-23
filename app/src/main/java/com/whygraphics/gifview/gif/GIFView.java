@@ -324,9 +324,8 @@ public class GIFView extends ImageView {
                 protected InputStream getGifInputStream(String string) throws Exception {
                     final int URL_START_INDEX = RESOURCE_PREFIX_URL.length();
                     String url = string.substring(URL_START_INDEX);
-
-                    // gets the input stream from the url
-                    return (InputStream) new URL(url).getContent();
+                    GIFCache cache = new GIFCache(getContext(), url);
+                    return cache.getInputStream();
                 }
 
             }.execute(string);
@@ -733,6 +732,17 @@ public class GIFView extends ImageView {
         setOnSettingGifListener(null);
         setOnClickStartOrPause(false);
         setImageBitmap(null);
+    }
+
+    /**
+     * <p>Returns the {@link File} object to the cache subdirectory, in which the cache stores
+     * all downloaded GIF image files.</p>
+     *
+     * @param context The application context for accessing the app's cache directory
+     * @return The {@link File} object representing GIFView's cache directory.
+     */
+    public static File getCacheSubDir(Context context) {
+        return GIFCache.getCacheSubDir(context);
     }
 
     /**
