@@ -20,11 +20,14 @@ import java.security.NoSuchAlgorithmException;
  *
  */
 class GIFCache {
+
+    private static final String CACHE_SUB_DIR = File.separator + "GIFView";
     private static final String HASH_MD5 = "MD5";
     private static final int BUFFER_SIZE = 65536;
 
     private final String url;
     private final File cachedGIF;
+    private final File cacheSubDir;
 
     /**
      * <p>Creates a new GIFCache object for GIF images defined by the given {@code url}.</p>
@@ -36,7 +39,11 @@ class GIFCache {
         this.url = url;
 
         try {
-            cachedGIF = new File(context.getCacheDir() + File.separator + bytesToHex(computeHash(url)));
+            cacheSubDir = new File(context.getCacheDir() + CACHE_SUB_DIR);
+            if(!cacheSubDir.exists()) {
+                cacheSubDir.mkdirs();
+            }
+            cachedGIF = new File(cacheSubDir.getAbsolutePath() + File.separator + bytesToHex(computeHash(url)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         } catch (UnsupportedEncodingException e) {
@@ -142,5 +149,15 @@ class GIFCache {
             hexChars[baseIndex + 1] = hexArray[value & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    /**
+     * Returns a {@link File} object representing the directory within the app's cache-area under
+     * which this {@link GIFCache} object stores all cached files.
+     *
+     * @return THe {@link File} object representing the cache sub-directory.
+     */
+    public File getCacheSubDir() {
+        return cachedGIF.getParentFile();
     }
 }
