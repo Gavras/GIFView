@@ -735,6 +735,17 @@ public class GIFView extends ImageView {
     }
 
     /**
+     * <p>Returns the {@link File} object to the cache subdirectory, in which the cache stores
+     * all downloaded GIF image files.</p>
+     *
+     * @param context The application context for accessing the app's cache directory
+     * @return The {@link File} object representing GIFView's cache directory.
+     */
+    public static File getCacheSubDir(Context context) {
+        return GIFCache.getCacheSubDir(context);
+    }
+
+    /**
      * Interface definition for callbacks to be invoked when setting a gif.
      */
     public interface OnSettingGifListener {
