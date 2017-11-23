@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
  * directory.</p>
  *
  */
-class GIFCache {
+public class GIFCache {
 
     private static final String CACHE_SUB_DIR = File.separator + "GIFView";
     private static final String HASH_MD5 = "MD5";
@@ -32,7 +32,7 @@ class GIFCache {
 
     private final String url;
     private final File cachedGIF;
-    private final File cacheSubDir;
+    private static File cacheSubDir;
 
     /**
      * <p>Creates a new GIFCache object for GIF images defined by the given {@code url}.</p>
@@ -44,14 +44,13 @@ class GIFCache {
         this.url = url;
 
         try {
-            cacheSubDir = new File(context.getCacheDir() + CACHE_SUB_DIR);
-            if(!cacheSubDir.exists()) {
-                cacheSubDir.mkdirs();
+            if(!getCacheSubDir(context).exists()) {
+                if(!cacheSubDir.mkdirs()) {
+                    throw new IOException("Cannot create directory " + cacheSubDir.getAbsolutePath());
+                }
             }
             cachedGIF = new File(cacheSubDir.getAbsolutePath() + File.separator + bytesToHex(computeHash(url)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
@@ -162,7 +161,10 @@ class GIFCache {
      *
      * @return THe {@link File} object representing the cache sub-directory.
      */
-    public File getCacheSubDir() {
-        return cachedGIF.getParentFile();
+    public static File getCacheSubDir(Context context) {
+        if(cacheSubDir == null) {
+            cacheSubDir = new File(context.getCacheDir() + CACHE_SUB_DIR);
+        }
+        return cacheSubDir;
     }
 }
