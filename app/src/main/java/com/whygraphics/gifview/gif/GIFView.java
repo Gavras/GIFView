@@ -324,9 +324,8 @@ public class GIFView extends ImageView {
                 protected InputStream getGifInputStream(String string) throws Exception {
                     final int URL_START_INDEX = RESOURCE_PREFIX_URL.length();
                     String url = string.substring(URL_START_INDEX);
-
-                    // gets the input stream from the url
-                    return (InputStream) new URL(url).getContent();
+                    GIFCache cache = new GIFCache(getContext(), url);
+                    return cache.getInputStream();
                 }
 
             }.execute(string);
