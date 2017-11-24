@@ -19,7 +19,7 @@ In your Application's or Module's build.gradle file:
 ```
 dependencies {
     ...
-    compile 'com.github.Gavras:GIFView:v1.1'
+    compile 'com.github.Gavras:GIFView:v1.2'
     ...
 }
 ```
